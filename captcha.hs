@@ -2,6 +2,7 @@ module CaptchaModule where
 import Data.List
 
 data Captcha leftOperand operator rightOperand = Captcha leftOperand operator rightOperand
+
 instance (Show l, Show o, Show r) => Show (Captcha l o r) where
 	show (Captcha l o r) = show l ++ " " ++ show o ++ " " ++ show r
 
