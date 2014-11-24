@@ -1,91 +1,101 @@
 module CaptchaModule where
 import Data.List
-import System.Random
 
-data Operand = TextOperand Int | NumberOperand Int
-		deriving (Show)
+data Captcha leftOperand operator rightOperand = Captcha leftOperand operator rightOperand
+instance (Show l, Show o, Show r) => Show (Captcha l o r) where
+	show (Captcha l o r) = show l ++ " " ++ show o ++ " " ++ show r
 
-showOperand:: Operand -> String
-showOperand (TextOperand 0) = "Zero"
-showOperand (TextOperand 1) = "One"
-showOperand (TextOperand 2) = "Two"
-showOperand (TextOperand 3) = "Three"
-showOperand (TextOperand 4) = "Four"
-showOperand (TextOperand 5) = "Five"
-showOperand (TextOperand 6) = "Six"
-showOperand (TextOperand 7) = "Seven"
-showOperand (TextOperand 8) = "Eight"
-showOperand (TextOperand 9) = "Nine"
-showOperand (TextOperand _) = error "Invalid Text Operand"
+answerCaptcha :: (Operand l, Operator o, Operand r,  Num a) => (Captcha l o r) -> a
+answerCaptcha (Captcha leftOperand operator rightOperand) = (apply operator) leftOperand rightOperand 
 
-showOperand (NumberOperand 0) = "0"
-showOperand (NumberOperand 1) = "1"
-showOperand (NumberOperand 2) = "2"
-showOperand (NumberOperand 3) = "3"
-showOperand (NumberOperand 4) = "4"
-showOperand (NumberOperand 5) = "5"
-showOperand (NumberOperand 6) = "6"
-showOperand (NumberOperand 7) = "7"
-showOperand (NumberOperand 8) = "8"
-showOperand (NumberOperand 9) = "9"
-showOperand (NumberOperand _) = error "Invalid Number Operand"
+class Operand a where
+	toInt :: (Num b) => a -> b
 
-data Operator = Add | Sub | Mul
-		deriving (Show, Enum, Bounded)
+data TextOperand = TextZero |
+			TextOne |
+			TextTwo |
+			TextThree |
+			TextFour |
+			TextFive |
+			TextSix |
+			TextSeven |
+			TextEight |
+			TextNine
+			deriving (Enum, Bounded)
 
-showOperator :: Operator -> String
-showOperator Add = "+"
-showOperator Sub = "-"
-showOperator Mul = "x"
+instance Show TextOperand where
+	show TextZero = "Zero"
+	show TextOne = "One"
+	show TextTwo = "Two"
+	show TextThree = "Three"
+	show TextFour = "Four"
+	show TextFive = "Five"
+	show TextSix = "Six"
+	show TextSeven = "Seven"
+	show TextEight = "Eight"
+	show TextNine = "Nine"
 
-realOperator :: Operator -> Int -> Int -> Int
-realOperator Add = (+)
-realOperator Sub = (-)
-realOperator Mul = (*)
+instance Operand TextOperand where
+	toInt TextZero = 0
+	toInt TextOne = 1
+	toInt TextTwo = 2
+	toInt TextThree = 3 
+	toInt TextFour = 4
+	toInt TextFive = 5
+	toInt TextSix = 6
+	toInt TextSeven = 7
+	toInt TextEight = 8
+	toInt TextNine = 9
 
-setOperator::Int -> Operator
-setOperator 0 = Add
-setOperator 1 = Sub
-setOperator 2 = Mul
+data NumberOperand = NumberZero |
+			NumberOne |
+			NumberTwo |
+			NumberThree |
+			NumberFour |
+			NumberFive |
+			NumberSix |
+			NumberSeven |
+			NumberEight |
+			NumberNine
+			deriving (Enum, Bounded)
 
-data Captcha = Captcha Operand Operator Operand
-		deriving (Show)
+instance Show NumberOperand where
+	show NumberZero = "0"
+	show NumberOne = "1"
+	show NumberTwo = "2"
+	show NumberThree = "3"
+	show NumberFour = "4"
+	show NumberFive = "5"
+	show NumberSix = "6"
+	show NumberSeven = "7"
+	show NumberEight = "8"
+	show NumberNine = "9"
 
-showCaptcha :: Captcha -> String
-showCaptcha (Captcha leftOperand operator rightOperand) = 
-	let 
-		showLeft  = showOperand(leftOperand)
-		showOp    = showOperator(operator)
-		showRight = showOperand(rightOperand)
-	in
-		showLeft ++ " " ++ showOp ++ " " ++ showRight
+instance Operand NumberOperand where
+	toInt NumberZero = 0
+	toInt NumberOne = 1
+	toInt NumberTwo = 2
+	toInt NumberThree = 3 
+	toInt NumberFour = 4
+	toInt NumberFive = 5
+	toInt NumberSix = 6
+	toInt NumberSeven = 7
+	toInt NumberEight = 8
+	toInt NumberNine = 9
 
-answerCaptcha :: Captcha -> Int
-answerCaptcha captcha = case captcha of
-	Captcha (NumberOperand left) op (TextOperand right) ->
-		(realOperator op) left right 
-	Captcha (TextOperand left) op (NumberOperand right) ->
-		(realOperator op) left right 
+class Operator o where
+	realOp :: (Num a) => o -> (a -> a -> a)
+	apply :: (Operand a, Operand b, Num c) => o -> a -> b -> c
 
-setCaptcha :: Int -> Int -> Int -> Int -> Captcha
-setCaptcha isTextLeftRandom leftOperandRandom operatorRandom rightOperandRandom =
-	case isTextLeftRandom of
-		0 ->
-			Captcha (TextOperand leftOperandRandom) (setOperator operatorRandom) (NumberOperand rightOperandRandom)
-		1 ->
-			Captcha (NumberOperand leftOperandRandom) (setOperator operatorRandom) (TextOperand rightOperandRandom)
+data TextOperator = Add | Sub | Mul deriving (Enum, Bounded)
 
-randomCaptcha :: IO Captcha
-randomCaptcha = do
-		leftOperandRandom <- randomRange 0 9
-		rightOperandRandom <- randomRange 0 9
-		operatorRandom <- randomRange 0 2
-		isTextLeftRandom <- randomRange 0 1
-		let captcha = setCaptcha isTextLeftRandom leftOperandRandom operatorRandom rightOperandRandom
-		return captcha
+instance Show TextOperator where
+	show Add = "+"
+	show Sub = "-"
+	show Mul = "x"
 
-randomRange::Int -> Int -> IO Int
-randomRange min max  = do
-			seed <- newStdGen
-			let (rInt, _) = randomR (min,max) seed
-			return rInt
+instance Operator TextOperator where
+	realOp Add = (+)
+	realOp Sub = (-)
+	realOp Mul = (*)
+	apply operator a b = (realOp operator) (toInt a) (toInt b)
