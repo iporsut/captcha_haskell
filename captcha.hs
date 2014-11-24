@@ -1,5 +1,6 @@
 module CaptchaModule where
 import Data.List
+import System.Random
 
 data Captcha leftOperand operator rightOperand = Captcha leftOperand operator rightOperand
 
@@ -8,6 +9,22 @@ instance (Show l, Show o, Show r) => Show (Captcha l o r) where
 
 answerCaptcha :: (Operand l, Operator o, Operand r,  Num a) => (Captcha l o r) -> a
 answerCaptcha (Captcha leftOperand operator rightOperand) = (apply operator) leftOperand rightOperand 
+
+data CaptchaOption = CaptchaTextLeft (Captcha TextOperand TextOperator NumberOperand) |
+			CaptchaTextRight (Captcha NumberOperand TextOperator TextOperand) deriving (Show)
+
+generateCaptcha :: IO CaptchaOption
+generateCaptcha = do
+			seed <- newStdGen
+			let
+				(textOperand, _) = randomR (TextZero, TextNine) seed
+				(operator, _) = randomR (Add, Mul) seed
+				(numberOperand, _) = randomR (NumberZero, NumberNine) seed
+				(isTextLeft, _) = randomR (True, False) seed
+				captcha = case isTextLeft of
+						True -> CaptchaTextLeft (Captcha textOperand operator numberOperand)
+						False -> CaptchaTextRight (Captcha numberOperand operator textOperand)
+			return captcha
 
 class Operand a where
 	toInt :: (Num b) => a -> b
@@ -48,6 +65,12 @@ instance Operand TextOperand where
 	toInt TextEight = 8
 	toInt TextNine = 9
 
+instance Random TextOperand where
+	randomR (a, b) g =
+		case randomR (fromEnum a, fromEnum b) g of
+			(x, g') -> (toEnum x, g')
+	random g = randomR (minBound, maxBound) g
+
 data NumberOperand = NumberZero |
 			NumberOne |
 			NumberTwo |
@@ -84,6 +107,12 @@ instance Operand NumberOperand where
 	toInt NumberEight = 8
 	toInt NumberNine = 9
 
+instance Random NumberOperand where
+	randomR (a, b) g =
+		case randomR (fromEnum a, fromEnum b) g of
+			(x, g') -> (toEnum x, g')
+	random g = randomR (minBound, maxBound) g
+
 class Operator o where
 	realOp :: (Num a) => o -> (a -> a -> a)
 	apply :: (Operand a, Operand b, Num c) => o -> a -> b -> c
@@ -100,3 +129,9 @@ instance Operator TextOperator where
 	realOp Sub = (-)
 	realOp Mul = (*)
 	apply operator a b = (realOp operator) (toInt a) (toInt b)
+
+instance Random TextOperator where
+	randomR (a, b) g =
+		case randomR (fromEnum a, fromEnum b) g of
+			(x, g') -> (toEnum x, g')
+	random g = randomR (minBound, maxBound) g
