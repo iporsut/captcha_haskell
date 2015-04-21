@@ -45,10 +45,10 @@ apply Add l r = (value l) + (value r)
 apply Sub l r = (value l) - (value r)
 apply Mul l r = (value l) * (value r)
 
-selectOperatorByNumber :: Int -> Operator
-selectOperatorByNumber 1 = Add
-selectOperatorByNumber 2 = Sub
-selectOperatorByNumber 3 = Mul
+operator :: Int -> Operator
+operator 1 = Add
+operator 2 = Sub
+operator 3 = Mul
 
 resultCaptcha :: Captcha -> Int
 resultCaptcha (TextNumberCaptcha  left operator right) = apply operator left right
@@ -62,7 +62,7 @@ generateCaptcha = do
                     operatorPattern <- randomRIO (1,3) :: IO Int
 
                     let 
-                        op = selectOperatorByNumber operatorPattern
+                        op = operator operatorPattern
                         textOperand = TextOperand textOperandPattern
                         numberOperand = NumberOperand numberOperandPattern in
 
