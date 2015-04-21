@@ -1,137 +1,74 @@
-module CaptchaModule where
-import Data.List
+{-# LANGUAGE GADTs #-}
+
 import System.Random
 
-data Captcha leftOperand operator rightOperand = Captcha leftOperand operator rightOperand
+data NumberOperand = NumberOperand Int deriving(Show)
 
-instance (Show l, Show o, Show r) => Show (Captcha l o r) where
-	show (Captcha l o r) = show l ++ " " ++ show o ++ " " ++ show r
+data TextOperand = TextOperand Int deriving(Show)
 
-answerCaptcha :: (Operand l, Operator o, Operand r,  Num a) => (Captcha l o r) -> a
-answerCaptcha (Captcha leftOperand operator rightOperand) = (apply operator) leftOperand rightOperand 
+data Operator = Add | Sub | Mul
 
-data CaptchaOption = CaptchaTextLeft (Captcha TextOperand TextOperator NumberOperand) |
-			CaptchaTextRight (Captcha NumberOperand TextOperator TextOperand) deriving (Show)
+data Captcha =
+    TextNumberCaptcha TextOperand Operator NumberOperand |
+    NumberTextCaptcha NumberOperand Operator TextOperand 
 
-generateCaptcha :: IO CaptchaOption
-generateCaptcha = do
-			seed <- newStdGen
-			let
-				(textOperand, _) = randomR (TextZero, TextNine) seed
-				(operator, _) = randomR (Add, Mul) seed
-				(numberOperand, _) = randomR (NumberZero, NumberNine) seed
-				(isTextLeft, _) = randomR (True, False) seed
-				captcha = case isTextLeft of
-						True -> CaptchaTextLeft (Captcha textOperand operator numberOperand)
-						False -> CaptchaTextRight (Captcha numberOperand operator textOperand)
-			return captcha
-
-class Operand a where
-	toInt :: (Num b) => a -> b
-
-data TextOperand = TextZero |
-			TextOne |
-			TextTwo |
-			TextThree |
-			TextFour |
-			TextFive |
-			TextSix |
-			TextSeven |
-			TextEight |
-			TextNine
-			deriving (Enum, Bounded)
-
-instance Show TextOperand where
-	show TextZero = "Zero"
-	show TextOne = "One"
-	show TextTwo = "Two"
-	show TextThree = "Three"
-	show TextFour = "Four"
-	show TextFive = "Five"
-	show TextSix = "Six"
-	show TextSeven = "Seven"
-	show TextEight = "Eight"
-	show TextNine = "Nine"
-
-instance Operand TextOperand where
-	toInt TextZero = 0
-	toInt TextOne = 1
-	toInt TextTwo = 2
-	toInt TextThree = 3 
-	toInt TextFour = 4
-	toInt TextFive = 5
-	toInt TextSix = 6
-	toInt TextSeven = 7
-	toInt TextEight = 8
-	toInt TextNine = 9
-
-instance Random TextOperand where
-	randomR (a, b) g =
-		case randomR (fromEnum a, fromEnum b) g of
-			(x, g') -> (toEnum x, g')
-	random g = randomR (minBound, maxBound) g
-
-data NumberOperand = NumberZero |
-			NumberOne |
-			NumberTwo |
-			NumberThree |
-			NumberFour |
-			NumberFive |
-			NumberSix |
-			NumberSeven |
-			NumberEight |
-			NumberNine
-			deriving (Enum, Bounded)
-
-instance Show NumberOperand where
-	show NumberZero = "0"
-	show NumberOne = "1"
-	show NumberTwo = "2"
-	show NumberThree = "3"
-	show NumberFour = "4"
-	show NumberFive = "5"
-	show NumberSix = "6"
-	show NumberSeven = "7"
-	show NumberEight = "8"
-	show NumberNine = "9"
+class Operand operand where
+    text :: operand -> [Char]
+    value :: operand -> Int
 
 instance Operand NumberOperand where
-	toInt NumberZero = 0
-	toInt NumberOne = 1
-	toInt NumberTwo = 2
-	toInt NumberThree = 3 
-	toInt NumberFour = 4
-	toInt NumberFive = 5
-	toInt NumberSix = 6
-	toInt NumberSeven = 7
-	toInt NumberEight = 8
-	toInt NumberNine = 9
+    text (NumberOperand n) = show n
+    value (NumberOperand n) = n
 
-instance Random NumberOperand where
-	randomR (a, b) g =
-		case randomR (fromEnum a, fromEnum b) g of
-			(x, g') -> (toEnum x, g')
-	random g = randomR (minBound, maxBound) g
+instance Operand TextOperand where
+    value (TextOperand n) = n
+    text (TextOperand 0) = "Zero"
+    text (TextOperand 1) = "One"
+    text (TextOperand 2) = "Two"
+    text (TextOperand 3) = "Three"
+    text (TextOperand 4) = "Four"
+    text (TextOperand 5) = "Five"
+    text (TextOperand 6) = "Six"
+    text (TextOperand 7) = "Seven"
+    text (TextOperand 8) = "Eight"
+    text (TextOperand 9) = "Nine"
 
-class Operator o where
-	realOp :: (Num a) => o -> (a -> a -> a)
-	apply :: (Operand a, Operand b, Num c) => o -> a -> b -> c
+instance Show Captcha where
+    show (TextNumberCaptcha left operator right) = "Captcha " ++ (text left) ++ " " ++ (show operator) ++ " " ++ (text right)
+    show (NumberTextCaptcha left operator right) = "Captcha " ++ (text left) ++ " " ++ (show operator) ++ " " ++ (text right)
 
-data TextOperator = Add | Sub | Mul deriving (Enum, Bounded)
+instance Show Operator where
+   show Add = "+"
+   show Sub = "-"
+   show Mul = "*"
 
-instance Show TextOperator where
-	show Add = "+"
-	show Sub = "-"
-	show Mul = "x"
+apply :: (Operand l,Operand r) => Operator -> l -> r -> Int
+apply Add l r = (value l) + (value r)
+apply Sub l r = (value l) - (value r)
+apply Mul l r = (value l) * (value r)
 
-instance Operator TextOperator where
-	realOp Add = (+)
-	realOp Sub = (-)
-	realOp Mul = (*)
-	apply operator a b = (realOp operator) (toInt a) (toInt b)
+selectOperatorByNumber :: Int -> Operator
+selectOperatorByNumber 1 = Add
+selectOperatorByNumber 2 = Sub
+selectOperatorByNumber 3 = Mul
 
-instance Random TextOperator where
-	randomR (a, b) g =
-		case randomR (fromEnum a, fromEnum b) g of
-			(x, g') -> (toEnum x, g')
-	random g = randomR (minBound, maxBound) g
+resultCaptcha :: Captcha -> Int
+resultCaptcha (TextNumberCaptcha  left operator right) = apply operator left right
+resultCaptcha (NumberTextCaptcha  left operator right) = apply operator left right
+
+generateCaptcha :: IO (Captcha)
+generateCaptcha = do
+                    captchaPattern <- randomRIO (0,1) :: IO Int
+                    textOperandPattern <- randomRIO (0,9) :: IO Int
+                    numberOperandPattern <- randomRIO (0,9) :: IO Int
+                    operatorPattern <- randomRIO (1,3) :: IO Int
+
+                    let 
+                        op = selectOperatorByNumber operatorPattern
+                        textOperand = TextOperand textOperandPattern
+                        numberOperand = NumberOperand numberOperandPattern in
+
+                        if captchaPattern == 1 then
+                            return (TextNumberCaptcha textOperand op  numberOperand)
+                        else
+                            return (NumberTextCaptcha numberOperand op textOperand)
