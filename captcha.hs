@@ -1,5 +1,3 @@
-{-# LANGUAGE GADTs #-}
-
 import System.Random
 
 data NumberOperand = NumberOperand Int deriving(Show)
