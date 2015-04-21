@@ -32,8 +32,8 @@ instance Operand TextOperand where
     text (TextOperand 9) = "Nine"
 
 instance Show Captcha where
-    show (TextNumberCaptcha left operator right) = "Captcha " ++ (text left) ++ " " ++ (show operator) ++ " " ++ (text right)
-    show (NumberTextCaptcha left operator right) = "Captcha " ++ (text left) ++ " " ++ (show operator) ++ " " ++ (text right)
+    show (TextNumberCaptcha left operator right) = (text left) ++ " " ++ (show operator) ++ " " ++ (text right)
+    show (NumberTextCaptcha left operator right) = (text left) ++ " " ++ (show operator) ++ " " ++ (text right)
 
 instance Show Operator where
    show Add = "+"
