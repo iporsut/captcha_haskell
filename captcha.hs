@@ -11,7 +11,7 @@ data Captcha =
     NumberTextCaptcha NumberOperand Operator TextOperand 
 
 class Operand operand where
-    text :: operand -> [Char]
+    text :: operand -> String
     value :: operand -> Int
 
 instance Operand NumberOperand where
