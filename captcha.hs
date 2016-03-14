@@ -1,6 +1,9 @@
 import System.Random
+import Control.Monad
 
-data TextOperand = Zero | One | Two | Three | Four | Five | Six | Seven | Eight | Nine deriving(Enum, Show)
+data CaptchaType = TextNumber | NumberText deriving(Enum)
+
+data Operand = Zero | One | Two | Three | Four | Five | Six | Seven | Eight | Nine deriving(Enum, Show)
 
 data Operator = Add | Sub | Mul deriving(Enum)
 
@@ -9,30 +12,22 @@ instance Show Operator where
    show Sub = "-"
    show Mul = "*"
 
-data Captcha a b = Captcha a Operator b
+data Captcha  = Captcha CaptchaType Operand Operator Operand
 
-instance (Show a, Show b) => Show (Captcha a b) where
-  show (Captcha a operator b) = (show a) ++ " " ++ (show operator) ++ " " ++ (show b)
+instance Show Captcha where
+  show (Captcha TextNumber a operator b) = (show a) ++ " " ++ (show operator) ++ " " ++ (show $ fromEnum b)
+  show (Captcha NumberText a operator b) = (show $ fromEnum a) ++ " " ++ (show operator) ++ " " ++ (show b)
 
+result :: Captcha -> Int
+result (Captcha _ l Add r) = fromEnum l + fromEnum r
+result (Captcha _ l Sub r) = fromEnum l - fromEnum r
+result (Captcha _ l Mul r) = fromEnum l * fromEnum r
 
-apply :: Int -> Operator -> Int -> Int
-apply l Add r = l + r
-apply l Sub r = l - r
-apply l Mul r = l * r
-
-generateCaptcha :: IO (String, Int)
+generateCaptcha :: IO Captcha
 generateCaptcha = do
-                    captchaPattern <- randomRIO (0,1) :: IO Int
-                    operator <- randomRIO (0,2) :: IO Int
-                    operand1 <- randomRIO (0,9) :: IO Int
-                    operand2 <- randomRIO (0,9) :: IO Int
+                    captchaType <- liftM (\n -> toEnum n :: CaptchaType) $ randomRIO (0,1)
+                    operator <- liftM (\n -> toEnum n :: Operator) $ randomRIO (0,2)
+                    left <- liftM (\n -> toEnum n :: Operand) $ randomRIO (0,9)
+                    right <- liftM (\n -> toEnum n :: Operand) $ randomRIO (0,9)
 
-                    let
-                        op = toEnum operator :: Operator
-                        textOperand = toEnum operand1 :: TextOperand
-                        numOperand = operand2
-
-                    if captchaPattern == 1 then
-                      return (show $ Captcha textOperand op  numOperand, apply operand1 op operand2)
-                      else
-                      return (show $ Captcha numOperand op textOperand, apply operand2 op operand1)
+                    return $ Captcha captchaType left operator right
