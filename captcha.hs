@@ -1,10 +1,10 @@
 import System.Random
 import Control.Monad
 
+data Captcha  = Captcha CaptchaType Operand Operator Operand
 data CaptchaType = TextNumber | NumberText deriving(Enum)
 data Operand = Zero | One | Two | Three | Four | Five | Six | Seven | Eight | Nine deriving(Enum, Show)
 data Operator = Add | Sub | Mul deriving(Enum)
-data Captcha  = Captcha CaptchaType Operand Operator Operand
 
 toCaptchaType n = toEnum n :: CaptchaType
 toOperand n = toEnum n :: Operand
