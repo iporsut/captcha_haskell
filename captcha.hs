@@ -1,72 +1,38 @@
 import System.Random
 
-data NumberOperand = NumberOperand Int deriving(Show)
+data TextOperand = Zero | One | Two | Three | Four | Five | Six | Seven | Eight | Nine deriving(Enum, Show)
 
-data TextOperand = TextOperand Int deriving(Show)
-
-data Operator = Add | Sub | Mul
-
-data Captcha =
-    TextNumberCaptcha TextOperand Operator NumberOperand |
-    NumberTextCaptcha NumberOperand Operator TextOperand 
-
-class Operand operand where
-    text :: operand -> String
-    value :: operand -> Int
-
-instance Operand NumberOperand where
-    text (NumberOperand n) = show n
-    value (NumberOperand n) = n
-
-instance Operand TextOperand where
-    value (TextOperand n) = n
-    text (TextOperand 0) = "Zero"
-    text (TextOperand 1) = "One"
-    text (TextOperand 2) = "Two"
-    text (TextOperand 3) = "Three"
-    text (TextOperand 4) = "Four"
-    text (TextOperand 5) = "Five"
-    text (TextOperand 6) = "Six"
-    text (TextOperand 7) = "Seven"
-    text (TextOperand 8) = "Eight"
-    text (TextOperand 9) = "Nine"
-
-instance Show Captcha where
-    show (TextNumberCaptcha left operator right) = (text left) ++ " " ++ (show operator) ++ " " ++ (text right)
-    show (NumberTextCaptcha left operator right) = (text left) ++ " " ++ (show operator) ++ " " ++ (text right)
+data Operator = Add | Sub | Mul deriving(Enum)
 
 instance Show Operator where
    show Add = "+"
    show Sub = "-"
    show Mul = "*"
 
-apply :: (Operand l,Operand r) => Operator -> l -> r -> Int
-apply Add l r = (value l) + (value r)
-apply Sub l r = (value l) - (value r)
-apply Mul l r = (value l) * (value r)
+data Captcha a b = Captcha a Operator b
 
-operator :: Int -> Operator
-operator 1 = Add
-operator 2 = Sub
-operator 3 = Mul
+instance (Show a, Show b) => Show (Captcha a b) where
+  show (Captcha a operator b) = (show a) ++ " " ++ (show operator) ++ " " ++ (show b)
 
-resultCaptcha :: Captcha -> Int
-resultCaptcha (TextNumberCaptcha  left operator right) = apply operator left right
-resultCaptcha (NumberTextCaptcha  left operator right) = apply operator left right
 
-generateCaptcha :: IO (Captcha)
+apply :: Int -> Operator -> Int -> Int
+apply l Add r = l + r
+apply l Sub r = l - r
+apply l Mul r = l * r
+
+generateCaptcha :: IO (String, Int)
 generateCaptcha = do
                     captchaPattern <- randomRIO (0,1) :: IO Int
-                    textOperandPattern <- randomRIO (0,9) :: IO Int
-                    numberOperandPattern <- randomRIO (0,9) :: IO Int
-                    operatorPattern <- randomRIO (1,3) :: IO Int
+                    operator <- randomRIO (0,2) :: IO Int
+                    operand1 <- randomRIO (0,9) :: IO Int
+                    operand2 <- randomRIO (0,9) :: IO Int
 
-                    let 
-                        op = operator operatorPattern
-                        textOperand = TextOperand textOperandPattern
-                        numberOperand = NumberOperand numberOperandPattern in
+                    let
+                        op = toEnum operator :: Operator
+                        textOperand = toEnum operand1 :: TextOperand
+                        numOperand = operand2
 
-                        if captchaPattern == 1 then
-                            return (TextNumberCaptcha textOperand op  numberOperand)
-                        else
-                            return (NumberTextCaptcha numberOperand op textOperand)
+                    if captchaPattern == 1 then
+                      return (show $ Captcha textOperand op  numOperand, apply operand1 op operand2)
+                      else
+                      return (show $ Captcha numOperand op textOperand, apply operand2 op operand1)
